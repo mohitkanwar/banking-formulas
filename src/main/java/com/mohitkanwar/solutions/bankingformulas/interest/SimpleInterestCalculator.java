@@ -21,7 +21,7 @@ import java.math.RoundingMode;
  *
  * <p>This calculator is widely applicable in:
  * <ul>
- *     <li>Penalties & overdue interest</li>
+ *     <li>Penalties &amp; overdue interest</li>
  *     <li>Short-term loans</li>
  *     <li>Legacy fixed deposit rules</li>
  *     <li>Interest on savings for partial-period calculations</li>
