@@ -20,7 +20,12 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-
+  <scm>
+    <url>https://github.com/mohitkanwar/banking-formulas</url>
+    <connection>scm:git:https://github.com/mohitkanwar/banking-formulas.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:mohitkanwar/banking-formulas.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
   <developers>
     <developer>
       <id>mohitkanwar</id>
