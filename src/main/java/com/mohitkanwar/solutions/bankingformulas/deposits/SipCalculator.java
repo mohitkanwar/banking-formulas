@@ -1,6 +1,7 @@
 package com.mohitkanwar.solutions.bankingformulas.deposits;
 
-import com.mohitkanwar.solutions.bankingformulas.interest.CompoundInterestCalculator.CompoundingFrequency;
+
+import com.mohitkanwar.solutions.bankingformulas.interest.CompoundingFrequency;
 
 import java.math.BigDecimal;
 import java.math.MathContext;

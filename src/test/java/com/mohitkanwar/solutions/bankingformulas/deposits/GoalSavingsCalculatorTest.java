@@ -1,6 +1,6 @@
 package com.mohitkanwar.solutions.bankingformulas.deposits;
 
-import com.mohitkanwar.solutions.bankingformulas.interest.CompoundInterestCalculator.CompoundingFrequency;
+import com.mohitkanwar.solutions.bankingformulas.interest.CompoundingFrequency;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

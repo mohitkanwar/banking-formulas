@@ -1,11 +1,15 @@
 package com.mohitkanwar.solutions.bankingformulas.deposits;
 
 import com.mohitkanwar.solutions.bankingformulas.interest.CompoundInterestCalculator;
+import com.mohitkanwar.solutions.bankingformulas.interest.CompoundingFrequency;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
-import static com.mohitkanwar.solutions.bankingformulas.interest.CompoundInterestCalculator.CompoundingFrequency;
 
 /**
  * Utility class for calculating Fixed Deposit (FD) maturity and interest.
@@ -31,55 +35,59 @@ public final class FixedDepositCalculator {
 
     private static final int CURRENCY_SCALE = 2;
     private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
+    public static final long DAYS_IN_YEAR = 365L;
 
-    private FixedDepositCalculator() {
-        // utility class
+
+    public BigDecimal getMaturityAmount(BigDecimal fdAmount, Date fdStartDate, Date fdMaturityDate, BigDecimal annualRate, MaturityInstructions maturityInstructions) {
+        validateFdAmount(fdAmount);
+        validateFdStartDate(fdStartDate);
+        validateFdMaturityDate(fdStartDate, fdMaturityDate);
+        validateAnnualRate(annualRate);
+        LocalDate start = fdStartDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = fdMaturityDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+
+        switch (maturityInstructions) {
+            case ON_MATURITY_MONTHLY_COMPOUNDING -> {
+                long months = ChronoUnit.MONTHS.between(start, end);
+                return calculateMaturityAmountForMonths(fdAmount, annualRate, months);
+            }
+            case ON_MATURITY_DAILY_COMPOUNDING -> {
+                long days = ChronoUnit.DAYS.between(start, end);
+                if (!start.equals(end)) {
+                    days++;
+                }
+
+                return calculateMaturityAmountForDays(fdAmount, annualRate, days, CompoundingFrequency.DAILY);
+            }
+            default -> throw new IllegalArgumentException("Given Maturity Instructions are not supported yet: " + maturityInstructions);
+        }
     }
 
-    /**
-     * Calculates FD maturity amount using a term specified in full years.
-     *
-     * @param principal  principal amount (non-null, ≥ 0)
-     * @param annualRate annual interest rate in percent (non-null)
-     * @param years      term in years (non-null, ≥ 0)
-     * @param frequency  compounding frequency (non-null)
-     * @return maturity amount rounded to 2 decimal places
-     */
-    public static BigDecimal calculateMaturityAmountForYears(BigDecimal principal,
-                                                             BigDecimal annualRate,
-                                                             BigDecimal years,
-                                                             CompoundingFrequency frequency) {
-        validatePrincipalAndRate(principal, annualRate);
-
-        if (years == null) {
-            throw new IllegalArgumentException("years must not be null");
+    private void validateAnnualRate(BigDecimal annualRate) {
+        if (annualRate == null || annualRate.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("annualRate must not be negative or null");
         }
-        if (years.signum() < 0) {
-            throw new IllegalArgumentException("years must not be negative");
-        }
-
-        BigDecimal amount = CompoundInterestCalculator.calculateAmount(
-                principal, annualRate, years, frequency);
-        return amount.setScale(CURRENCY_SCALE, ROUNDING);
     }
 
-    /**
-     * Calculates FD maturity amount using a term specified in months.
-     *
-     * <p>Converts months to years as: {@code years = months / 12}.
-     *
-     * @param principal  principal amount (non-null, ≥ 0)
-     * @param annualRate annual interest rate in percent (non-null)
-     * @param months     term in months (≥ 0)
-     * @param frequency  compounding frequency (non-null)
-     * @return maturity amount rounded to 2 decimal places
-     */
-    public static BigDecimal calculateMaturityAmountForMonths(BigDecimal principal,
+    private void validateFdMaturityDate(Date fdStartDate, Date fdMaturityDate) {
+        if (fdMaturityDate == null ) throw new IllegalArgumentException("FD maturity date must be a valid date");
+        if (fdMaturityDate.before(fdStartDate) ) throw new IllegalArgumentException("FD maturity date must not come before FD start date");
+    }
+
+    private void validateFdStartDate(Date fdStartDate) {
+        if (fdStartDate == null ) throw new IllegalArgumentException("FD start date must be a valid date");
+    }
+
+    private void validateFdAmount(BigDecimal fdAmount) {
+        if (fdAmount == null || fdAmount.compareTo(BigDecimal.ZERO) <= 0 ) {
+            throw new IllegalArgumentException("FD Amount must be a positive number");
+        }
+    }
+
+    private BigDecimal calculateMaturityAmountForMonths(BigDecimal principal,
                                                               BigDecimal annualRate,
-                                                              int months,
-                                                              CompoundingFrequency frequency) {
-        validatePrincipalAndRate(principal, annualRate);
-
+                                                              long months) {
         if (months < 0) {
             throw new IllegalArgumentException("months must not be negative");
         }
@@ -88,7 +96,7 @@ public final class FixedDepositCalculator {
                 .divide(BigDecimal.valueOf(12L), 10, ROUNDING);
 
         BigDecimal amount = CompoundInterestCalculator.calculateAmount(
-                principal, annualRate, years, frequency);
+                principal, annualRate, years, CompoundingFrequency.MONTHLY);
         return amount.setScale(CURRENCY_SCALE, ROUNDING);
     }
 
@@ -104,68 +112,20 @@ public final class FixedDepositCalculator {
      * @param frequency  compounding frequency (non-null)
      * @return maturity amount rounded to 2 decimal places
      */
-    public static BigDecimal calculateMaturityAmountForDays(BigDecimal principal,
+    private BigDecimal calculateMaturityAmountForDays(BigDecimal principal,
                                                             BigDecimal annualRate,
-                                                            int days,
+                                                            long days,
                                                             CompoundingFrequency frequency) {
-        validatePrincipalAndRate(principal, annualRate);
 
         if (days < 0) {
             throw new IllegalArgumentException("days must not be negative");
         }
 
         BigDecimal years = BigDecimal.valueOf(days)
-                .divide(BigDecimal.valueOf(365L), 10, ROUNDING);
+                .divide(BigDecimal.valueOf(DAYS_IN_YEAR), 10, ROUNDING);
 
         BigDecimal amount = CompoundInterestCalculator.calculateAmount(
                 principal, annualRate, years, frequency);
         return amount.setScale(CURRENCY_SCALE, ROUNDING);
-    }
-
-    /**
-     * Calculates interest earned for a term specified in years.
-     *
-     * <p>Interest = Maturity - Principal.
-     */
-    public static BigDecimal calculateInterestForYears(BigDecimal principal,
-                                                       BigDecimal annualRate,
-                                                       BigDecimal years,
-                                                       CompoundingFrequency frequency) {
-        BigDecimal maturity = calculateMaturityAmountForYears(principal, annualRate, years, frequency);
-        return maturity.subtract(principal).setScale(CURRENCY_SCALE, ROUNDING);
-    }
-
-    /**
-     * Calculates interest earned for a term specified in months.
-     */
-    public static BigDecimal calculateInterestForMonths(BigDecimal principal,
-                                                        BigDecimal annualRate,
-                                                        int months,
-                                                        CompoundingFrequency frequency) {
-        BigDecimal maturity = calculateMaturityAmountForMonths(principal, annualRate, months, frequency);
-        return maturity.subtract(principal).setScale(CURRENCY_SCALE, ROUNDING);
-    }
-
-    /**
-     * Calculates interest earned for a term specified in days.
-     */
-    public static BigDecimal calculateInterestForDays(BigDecimal principal,
-                                                      BigDecimal annualRate,
-                                                      int days,
-                                                      CompoundingFrequency frequency) {
-        BigDecimal maturity = calculateMaturityAmountForDays(principal, annualRate, days, frequency);
-        return maturity.subtract(principal).setScale(CURRENCY_SCALE, ROUNDING);
-    }
-
-    private static void validatePrincipalAndRate(BigDecimal principal, BigDecimal annualRate) {
-        if (principal == null) {
-            throw new IllegalArgumentException("principal must not be null");
-        }
-        if (annualRate == null) {
-            throw new IllegalArgumentException("annualRate must not be null");
-        }
-        if (principal.signum() < 0) {
-            throw new IllegalArgumentException("principal must not be negative");
-        }
     }
 }

@@ -5,7 +5,7 @@
 
   <groupId>com.mohitkanwar.solutions.bankingformulas</groupId>
   <artifactId>banking-formulas</artifactId>
-  <version>0.0.2</version>
+  <version>0.2.0</version>
   <packaging>jar</packaging>
 
   <name>Banking Formulas &amp; Calculators</name>
